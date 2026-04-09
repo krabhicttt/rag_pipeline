@@ -1,0 +1,28 @@
+# ===== Web Framework =====
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# ===== Environment & Config =====
+#python-dotenv==1.0.1
+pydantic-settings==2.4.0
+
+# ===== Ollama Client =====
+ollama==0.3.3
+
+# ===== Postgres + pgvector =====
+psycopg2-binary==2.9.11
+pgvector==0.3.2
+sqlalchemy==2.0.35
+
+# ===== Document Loaders =====
+pypdf==4.3.1           # PDF files
+python-docx==1.1.2     # Word documents
+openpyxl==3.1.5        # Excel files
+
+# ===== Text Processing =====
+nltk==3.9.1
+regex==2024.9.11
+
+# ===== Utilities =====
+#numpy==1.26.4
+#tqdm==4.66.5           # progress bars during ingestion

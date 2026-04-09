@@ -1,0 +1,99 @@
+{
+  "folders": [
+    {
+      "name": "Frontend (Chat UI)",
+      "path": "frontend"
+    },
+    {
+      "name": "Backend (Python RAG API)",
+      "path": "backend"
+    }
+  ],
+  "settings": {
+    // ----- Python -----
+    "python.defaultInterpreterPath": "${workspaceFolder:Backend (Python RAG API)}/.venv/Scripts/python",
+    "python.terminal.activateEnvironment": true,
+    "[python]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "ms-python.autopep8",
+      "editor.tabSize": 4,
+      "editor.insertSpaces": true
+    },
+
+    // ----- Frontend -----
+    "[html]": {
+      "editor.formatOnSave": true,
+      "editor.tabSize": 2
+    },
+    "[css]": {
+      "editor.formatOnSave": true,
+      "editor.tabSize": 2
+    },
+    "[javascript]": {
+      "editor.formatOnSave": true,
+      "editor.tabSize": 2
+    },
+
+    // ----- Editor General -----
+    "editor.fontSize": 14,
+    "editor.lineHeight": 1.6,
+    "editor.rulers": [88],
+    "editor.minimap.enabled": false,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": true,
+    "editor.stickyScroll.enabled": true,
+    "editor.wordWrap": "on",
+
+    // ----- Terminal -----
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+
+    // ----- Explorer -----
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+      "*.py": "${capture}.pyc",
+      ".env.example": ".env"
+    },
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/.venv": false
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.autopep8",
+      "ms-python.pylint",
+      "ms-toolsai.jupyter",
+      "ritwickdey.liveserver",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "streetsidesoftware.code-spell-checker",
+      "ms-vscode.live-server",
+      "mtxr.sqltools",
+      "mtxr.sqltools-driver-pg"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run FastAPI Backend",
+        "type": "python",
+        "request": "launch",
+        "module": "uvicorn",
+        "args": [
+          "main:app",
+          "--reload",
+          "--host", "0.0.0.0",
+          "--port", "8000"
+        ],
+        "cwd": "${workspaceFolder:Backend (Python RAG API)}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder:Backend (Python RAG API)}"
+        },
+        "console": "integratedTerminal"
+      }
+    ]
+  }
+}
