@@ -38,65 +38,57 @@ def extract_metadata(file_path: Path, raw_text: str) -> dict:
 
     Returns
     -------
-    A dict that will be stored alongside each chunk in Postgres.
-    Keys should be consistent across all documents.
-
-    TODO — starter implementation:
-        metadata = {
-            "source":    file_path.name,
-            "file_type": file_path.suffix.lower().lstrip("."),
-            "created_at": get_file_date(file_path),   # see helper below
-        }
-
-        # For PDFs — extract PDF properties:
-        if file_path.suffix.lower() == ".pdf":
-            from pypdf import PdfReader
-            reader = PdfReader(str(file_path))
-            info   = reader.metadata or {}
-            metadata["title"]  = info.get("/Title", file_path.stem)
-            metadata["author"] = info.get("/Author", "Unknown")
-
-        # For DOCX — extract core properties:
-        elif file_path.suffix.lower() == ".docx":
-            from docx import Document
-            doc  = Document(str(file_path))
-            core = doc.core_properties
-            metadata["title"]  = core.title or file_path.stem
-            metadata["author"] = core.author or "Unknown"
-
-        # Manual tags — add your own logic here:
-        # metadata["tags"] = derive_tags(raw_text)
-
-        return metadata
+    A dict stored alongside each chunk in Postgres.
+    Keys are consistent across all document types.
     """
-    raise NotImplementedError("Implement extract_metadata")
+    suffix = file_path.suffix.lower()
+
+    metadata: dict = {
+        "source":     file_path.name,
+        "file_type":  suffix.lstrip("."),
+        "created_at": get_file_date(file_path),
+        "title":      file_path.stem,   # overridden below if richer info is available
+        "author":     "Unknown",
+    }
+
+    if suffix == ".pdf":
+        from pypdf import PdfReader
+
+        reader = PdfReader(str(file_path))
+        info   = reader.metadata or {}
+        metadata["title"]  = info.get("/Title")  or file_path.stem
+        metadata["author"] = info.get("/Author") or "Unknown"
+        metadata["pages"]  = len(reader.pages)
+
+    elif suffix == ".docx":
+        from docx import Document
+
+        doc  = Document(str(file_path))
+        core = doc.core_properties
+        metadata["title"]  = core.title  or file_path.stem
+        metadata["author"] = core.author or "Unknown"
+
+    return metadata
 
 
 def get_file_date(file_path: Path) -> str:
-    """
-    Return the file's last-modified date as an ISO string (YYYY-MM-DD).
+    """Return the file's last-modified date as an ISO string (YYYY-MM-DD)."""
+    from datetime import datetime
 
-    TODO:
-        from datetime import datetime
-        ts = file_path.stat().st_mtime
-        return datetime.fromtimestamp(ts).date().isoformat()
-    """
-    raise NotImplementedError("Implement get_file_date")
+    ts = file_path.stat().st_mtime
+    return datetime.fromtimestamp(ts).date().isoformat()
 
 
 def derive_tags(text: str, keywords: list[str] | None = None) -> list[str]:
     """
-    Optional: derive topic tags from text by checking for keyword presence.
+    Derive topic tags from text by checking for keyword presence.
 
     Parameters
     ----------
     text     : The document or chunk text.
-    keywords : A list of known domain keywords to look for.
-
-    TODO:
-        if not keywords:
-            return []
-        text_lower = text.lower()
-        return [kw for kw in keywords if kw.lower() in text_lower]
+    keywords : Known domain keywords to look for.
     """
-    raise NotImplementedError("Implement derive_tags (optional)")
+    if not keywords:
+        return []
+    text_lower = text.lower()
+    return [kw for kw in keywords if kw.lower() in text_lower]

@@ -22,11 +22,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from rag.metadata_extractor import extract_metadata
+
 # Uncomment once you implement the other modules:
-# from rag.metadata_extractor import extract_metadata
-# from rag.normalizer         import normalize_text
-# from rag.embeddings         import generate_embedding
-# from rag.vector_store       import store_chunk
+# from rag.normalizer  import normalize_text
+# from rag.embeddings  import generate_embedding
+# from rag.vector_store import store_chunk
 
 
 # ---------------------------------------------------------------------------
@@ -168,7 +169,9 @@ async def ingest_documents(directory: str) -> int:
 
         print(f"[ingest] Loaded {file_path.name} ({len(raw_text):,} chars)")
 
-        # TODO step 2: metadata  = extract_metadata(file_path, raw_text)
+        metadata = extract_metadata(file_path, raw_text)
+        print(f"metadata for {file_path.name}: {metadata}")
+
         # TODO step 3: clean_text = normalize_text(raw_text)
         # TODO step 4: chunks    = chunk_text(clean_text, settings.chunk_size, settings.chunk_overlap)
         # TODO step 5: for each chunk — embedding = generate_embedding(chunk)
