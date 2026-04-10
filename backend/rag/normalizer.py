@@ -38,64 +38,40 @@ def normalize_text(text: str) -> str:
     Returns
     -------
     Cleaned text ready for chunking.
-
-    TODO — starter implementation:
-        text = unicode_normalize(text)
-        text = remove_control_characters(text)
-        text = fix_whitespace(text)
-        text = remove_page_numbers(text)
-        # text = remove_boilerplate(text)   # add if needed
-        return text.strip()
     """
-    raise NotImplementedError("Implement normalize_text")
+    text = unicode_normalize(text)
+    text = remove_control_characters(text)
+    text = fix_whitespace(text)
+    text = remove_page_numbers(text)
+    # text = remove_boilerplate(text)   # add domain-specific patterns if needed
+    return text.strip()
 
 
 def unicode_normalize(text: str) -> str:
-    """
-    Normalise unicode to NFC form so that equivalent characters are identical.
-
-    TODO:
-        return unicodedata.normalize("NFC", text)
-    """
-    raise NotImplementedError("Implement unicode_normalize")
+    """Normalise unicode to NFC form so equivalent characters are identical."""
+    return unicodedata.normalize("NFC", text)
 
 
 def remove_control_characters(text: str) -> str:
-    """
-    Remove invisible control characters (except newlines and tabs).
-
-    TODO:
-        return "".join(
-            ch for ch in text
-            if unicodedata.category(ch)[0] != "C" or ch in "\n\t"
-        )
-    """
-    raise NotImplementedError("Implement remove_control_characters")
+    """Remove invisible control characters, keeping newlines and tabs."""
+    return "".join(
+        ch for ch in text
+        if unicodedata.category(ch)[0] != "C" or ch in "\n\t"
+    )
 
 
 def fix_whitespace(text: str) -> str:
-    """
-    Collapse multiple spaces/tabs into one, and limit consecutive newlines to 2.
-
-    TODO:
-        text = re.sub(r"[ \t]+",   " ",  text)   # collapse spaces
-        text = re.sub(r"\n{3,}",  "\n\n", text)  # max 2 blank lines
-        return text
-    """
-    raise NotImplementedError("Implement fix_whitespace")
+    """Collapse multiple spaces/tabs into one; limit consecutive newlines to 2."""
+    text = re.sub(r"[ \t]+",  " ",    text)
+    text = re.sub(r"\n{3,}", "\n\n",  text)
+    return text
 
 
 def remove_page_numbers(text: str) -> str:
-    """
-    Remove common page-number patterns like "Page 1 of 10" or standalone digits
-    on their own line.
-
-    TODO:
-        text = re.sub(r"(?i)\bpage\s+\d+\s+of\s+\d+\b", "", text)
-        text = re.sub(r"^\s*\d+\s*$", "", text, flags=re.MULTILINE)
-        return text
-    """
-    raise NotImplementedError("Implement remove_page_numbers")
+    """Remove 'Page N of M' patterns and lines that contain only a number."""
+    text = re.sub(r"(?i)\bpage\s+\d+\s+of\s+\d+\b", "", text)
+    text = re.sub(r"^\s*\d+\s*$", "", text, flags=re.MULTILINE)
+    return text
 
 
 def remove_boilerplate(text: str, patterns: list[str] | None = None) -> str:
@@ -105,13 +81,10 @@ def remove_boilerplate(text: str, patterns: list[str] | None = None) -> str:
     Parameters
     ----------
     text     : The document text.
-    patterns : List of regex patterns to strip (e.g. company name, confidential label).
-
-    TODO:
-        if not patterns:
-            return text
-        for pattern in patterns:
-            text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.MULTILINE)
-        return text
+    patterns : Regex patterns to strip (e.g. company name, confidential label).
     """
-    raise NotImplementedError("Implement remove_boilerplate (optional, domain-specific)")
+    if not patterns:
+        return text
+    for pattern in patterns:
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.MULTILINE)
+    return text
