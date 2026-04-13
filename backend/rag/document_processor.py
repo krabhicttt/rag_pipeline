@@ -22,8 +22,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from config.settings import settings
 from rag.metadata_extractor import extract_metadata
-
 from rag.normalizer import normalize_text
 
 # Uncomment once you implement the other modules:
@@ -174,7 +174,7 @@ async def ingest_documents(directory: str) -> int:
         print(f"metadata for {file_path.name}: {metadata}")
 
         clean_text = normalize_text(raw_text)
-        # TODO step 4: chunks    = chunk_text(clean_text, settings.chunk_size, settings.chunk_overlap)
+        chunks = chunk_text(clean_text, settings.chunk_size, settings.chunk_overlap)
         # TODO step 5: for each chunk — embedding = generate_embedding(chunk)
         # TODO step 6: store_chunk(text, embedding, source, chunk_idx, metadata)
 
