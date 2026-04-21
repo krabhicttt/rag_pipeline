@@ -20,21 +20,14 @@ and see which gives better retrieval quality.
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
-from urllib import response
-
-from docx import text
 
 from config.settings import settings
+from rag.embeddings import generate_embedding
 from rag.metadata_extractor import extract_metadata
 from rag.normalizer import normalize_text
-
-import asyncio
-
-from rag.embeddings import generate_embedding
-
-# Uncomment once you implement vector_store:
-# from rag.vector_store import store_chunk
+from rag.vector_store import store_chunk
 
 
 # ---------------------------------------------------------------------------
@@ -138,14 +131,15 @@ async def ingest_documents(directory: str) -> int:
     3. Normalise text (normalizer.py)
     4. Chunk the text (chunk_text)
     5. Generate an embedding per chunk via Ollama (embeddings.py)
+    6. Store each chunk + embedding in Postgres (vector_store.py)
 
-    TODO: step 6 — store chunks + embeddings in Postgres (vector_store.py)
+    Returns the total number of chunks stored.
     """
     root = Path(directory)
     if not root.exists() or not root.is_dir():
         raise ValueError(f"Not a valid directory: {directory}")
 
-    loaded = 0
+    total_chunks = 0
 
     for file_path in sorted(root.rglob("*")):
         if not file_path.is_file():
@@ -167,17 +161,10 @@ async def ingest_documents(directory: str) -> int:
 
         clean_text = normalize_text(raw_text)
         chunks = chunk_text(clean_text, settings.chunk_size, settings.chunk_overlap)
-        print("loaded",loaded)
-    
-        count = 0
         for idx, chunk in enumerate(chunks):
             embedding = await asyncio.to_thread(generate_embedding, chunk)
-            if(count<2):
-                print(f"Generated embedding for text (first 30 chars): '{chunk[:30]}...' -> {embedding}")
-                count+=1
             print(f"[ingest]   chunk {idx}: {len(embedding)}-dim embedding")
-            # TODO step 6: store_chunk(chunk, embedding, str(file_path), idx, metadata)
+            await asyncio.to_thread(store_chunk, chunk, embedding, str(file_path), idx, metadata)
+            total_chunks += 1
 
-        loaded += 1
-    
-    return loaded
+    return total_chunks

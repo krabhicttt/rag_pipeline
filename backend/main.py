@@ -47,12 +47,8 @@ app.include_router(router, prefix="/api")
 # ---------------------------------------------------------------------------
 @app.on_event("startup")
 async def on_startup():
-    """
-    TODO: Add startup logic here, for example:
-      - Create the pgvector extension in Postgres
-      - Create the embeddings table if it doesn't exist
-      - Warm up the Ollama model
-    """
+    from rag.vector_store import create_table
+    create_table()
     print("RAG Chat API started.")
     print(f"  Chat model  : {settings.ollama_chat_model}")
     print(f"  Embed model : {settings.ollama_embed_model}")

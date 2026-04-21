@@ -54,35 +54,30 @@ CREATE TABLE IF NOT EXISTS document_chunks (
 
 def get_connection():
     """
-    Return a psycopg2 database connection.
-
-    TODO:
-        import psycopg2
-        from pgvector.psycopg2 import register_vector
-
-        conn = psycopg2.connect(settings.postgres_dsn)
-        register_vector(conn)   # enables the vector type
-        return conn
-
-    Tip: for production, use a connection pool (e.g. psycopg2.pool or SQLAlchemy).
+    Return a new psycopg2 connection with the pgvector type registered.
+    Each caller is responsible for closing the connection.
     """
-    raise NotImplementedError("Implement get_connection()")
+    import psycopg2
+    from pgvector.psycopg2 import register_vector
+
+    conn = psycopg2.connect(settings.postgres_dsn)
+    register_vector(conn)
+    return conn
 
 
 def create_table() -> None:
     """
-    Create the document_chunks table (and pgvector extension) if they don't exist.
-    Call this once during startup in main.py → on_startup().
-
-    TODO:
-        conn = get_connection()
+    Create the pgvector extension and document_chunks table if they don't exist.
+    Called once from main.py → on_startup().
+    """
+    conn = get_connection()
+    try:
         with conn.cursor() as cur:
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
             cur.execute(CREATE_TABLE_SQL)
         conn.commit()
+    finally:
         conn.close()
-    """
-    raise NotImplementedError("Implement create_table()")
 
 
 def store_chunk(
@@ -93,23 +88,23 @@ def store_chunk(
     metadata:  dict | None = None,
 ) -> None:
     """
-    Insert one chunk (text + embedding + metadata) into the database.
+    Insert one chunk (text + embedding + metadata) into document_chunks.
+    """
+    import json
 
-    TODO:
-        import json
-        conn = get_connection()
+    conn = get_connection()
+    try:
         with conn.cursor() as cur:
             cur.execute(
-                
+                """
                 INSERT INTO document_chunks (source, chunk_idx, text, embedding, metadata)
                 VALUES (%s, %s, %s, %s, %s)
-                ,
-                (source, chunk_idx, text, embedding, json.dumps(metadata or {}))
+                """,
+                (source, chunk_idx, text, embedding, json.dumps(metadata or {})),
             )
         conn.commit()
+    finally:
         conn.close()
-    """
-    raise NotImplementedError("Implement store_chunk()")
 
 
 def similarity_search(
@@ -117,66 +112,60 @@ def similarity_search(
     top_k: int | None = None,
 ) -> list[dict]:
     """
-    Find the top-k most similar chunks to the query embedding.
+    Return the top-k chunks whose embeddings are closest to query_embedding.
 
-    Uses cosine distance (<=> operator in pgvector).
+    Uses pgvector cosine distance (<=>). Score = 1 - cosine_distance,
+    so higher score means more similar.
 
     Parameters
     ----------
     query_embedding : Embedding of the user's query (from embeddings.py).
-    top_k           : Number of results to return. Defaults to settings.top_k_results.
-
-    Returns
-    -------
-    List of dicts, each containing:
-        { "text", "source", "chunk_idx", "metadata", "score" }
-    where score = 1 - cosine_distance  (higher = more similar).
-
-    TODO:
-        top_k = top_k or settings.top_k_results
-        conn  = get_connection()
+    top_k           : Number of results. Defaults to settings.top_k_results.
+    """
+    top_k = top_k or settings.top_k_results
+    conn  = get_connection()
+    try:
         with conn.cursor() as cur:
             cur.execute(
-                
+                """
                 SELECT text, source, chunk_idx, metadata,
                        1 - (embedding <=> %s::vector) AS score
                 FROM document_chunks
                 ORDER BY embedding <=> %s::vector
                 LIMIT %s
-                ,
-                (query_embedding, query_embedding, top_k)
+                """,
+                (query_embedding, query_embedding, top_k),
             )
             rows = cur.fetchall()
+    finally:
         conn.close()
 
-        return [
-            {
-                "text":      row[0],
-                "source":    row[1],
-                "chunk_idx": row[2],
-                "metadata":  row[3],
-                "score":     float(row[4]),
-            }
-            for row in rows
-        ]
-    """
-    raise NotImplementedError("Implement similarity_search()")
+    return [
+        {
+            "text":      row[0],
+            "source":    row[1],
+            "chunk_idx": row[2],
+            "metadata":  row[3],
+            "score":     float(row[4]),
+        }
+        for row in rows
+    ]
 
 
 def delete_document(source: str) -> int:
     """
-    Remove all chunks belonging to a document (by source path).
-    Useful when a document is updated and needs to be re-ingested.
-
+    Remove all chunks belonging to *source* (file path).
     Returns the number of rows deleted.
-
-    TODO:
-        conn = get_connection()
+    Useful when a document is updated and needs to be re-ingested.
+    """
+    conn = get_connection()
+    try:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM document_chunks WHERE source = %s", (source,))
+            cur.execute(
+                "DELETE FROM document_chunks WHERE source = %s", (source,)
+            )
             count = cur.rowcount
         conn.commit()
+    finally:
         conn.close()
-        return count
-    """
-    raise NotImplementedError("Implement delete_document()")
+    return count
