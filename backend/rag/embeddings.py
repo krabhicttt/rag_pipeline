@@ -43,34 +43,17 @@ def generate_embedding(text: str, model: str | None = None) -> list[float]:
     -------
     A list of floats (the embedding vector).
 
-    TODO:
-        import ollama
-        model = model or settings.ollama_embed_model
-        response = ollama.embeddings(model=model, prompt=text)
-        return response["embedding"]
-
-    Note: ollama.embeddings() is synchronous. For async FastAPI routes,
-    consider running it in a thread pool:
-        import asyncio
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: ollama.embeddings(model=model, prompt=text)
-        )
-        return response["embedding"]
+    Note: this is synchronous. Call via asyncio.to_thread() from async contexts
+    to avoid blocking the event loop.
     """
-    raise NotImplementedError("Implement generate_embedding using ollama.embeddings()")
+    import ollama
+    embed_model = model or settings.ollama_embed_model
+    response = ollama.embeddings(model=embed_model, prompt=text)
+    return list(response["embedding"])
 
 
 def generate_embeddings_batch(texts: list[str], model: str | None = None) -> list[list[float]]:
     """
-    Generate embeddings for a list of texts (one at a time, Ollama has no batch API).
-
-    TODO:
-        return [generate_embedding(t, model) for t in texts]
-
-    Tip: wrap with tqdm for a progress bar during ingestion:
-        from tqdm import tqdm
-        return [generate_embedding(t, model) for t in tqdm(texts, desc="Embedding")]
+    Generate embeddings for a list of texts (one at a time — Ollama has no batch API).
     """
-    raise NotImplementedError("Implement generate_embeddings_batch")
+    return [generate_embedding(t, model) for t in texts]

@@ -21,13 +21,19 @@ and see which gives better retrieval quality.
 from __future__ import annotations
 
 from pathlib import Path
+from urllib import response
+
+from docx import text
 
 from config.settings import settings
 from rag.metadata_extractor import extract_metadata
 from rag.normalizer import normalize_text
 
-# Uncomment once you implement the other modules:
-# from rag.embeddings   import generate_embedding
+import asyncio
+
+from rag.embeddings import generate_embedding
+
+# Uncomment once you implement vector_store:
 # from rag.vector_store import store_chunk
 
 
@@ -125,29 +131,15 @@ async def ingest_documents(directory: str) -> int:
     Walk *directory* recursively, load every supported file, and return the
     number of documents loaded.
 
-    Steps implemented so far
-    ------------------------
+    Steps implemented
+    -----------------
     1. Walk the directory and load each file (pypdf / python-docx / plain text)
+    2. Extract metadata (metadata_extractor.py)
+    3. Normalise text (normalizer.py)
+    4. Chunk the text (chunk_text)
+    5. Generate an embedding per chunk via Ollama (embeddings.py)
 
-    Steps 2-6 (metadata, normalise, chunk, embed, store) are TODO.
-
-            raw_text  = load_file(file_path)
-            metadata  = extract_metadata(file_path, raw_text)    # metadata_extractor.py
-            clean_text = normalize_text(raw_text)                 # normalizer.py
-            chunks    = chunk_text(clean_text, settings.chunk_size, settings.chunk_overlap)
-
-            for idx, chunk in enumerate(chunks):
-                embedding = generate_embedding(chunk)             # embeddings.py
-                store_chunk(                                      # vector_store.py
-                    text=chunk,
-                    embedding=embedding,
-                    source=str(file_path),
-                    chunk_idx=idx,
-                    metadata=metadata,
-                )
-                total += 1
-
-        return total
+    TODO: step 6 — store chunks + embeddings in Postgres (vector_store.py)
     """
     root = Path(directory)
     if not root.exists() or not root.is_dir():
@@ -175,9 +167,17 @@ async def ingest_documents(directory: str) -> int:
 
         clean_text = normalize_text(raw_text)
         chunks = chunk_text(clean_text, settings.chunk_size, settings.chunk_overlap)
-        # TODO step 5: for each chunk — embedding = generate_embedding(chunk)
-        # TODO step 6: store_chunk(text, embedding, source, chunk_idx, metadata)
+        print("loaded",loaded)
+    
+        count = 0
+        for idx, chunk in enumerate(chunks):
+            embedding = await asyncio.to_thread(generate_embedding, chunk)
+            if(count<2):
+                print(f"Generated embedding for text (first 30 chars): '{chunk[:30]}...' -> {embedding}")
+                count+=1
+            print(f"[ingest]   chunk {idx}: {len(embedding)}-dim embedding")
+            # TODO step 6: store_chunk(chunk, embedding, str(file_path), idx, metadata)
 
         loaded += 1
-
+    
     return loaded
