@@ -20,12 +20,13 @@ can answer questions about YOUR private documents.
 
 from __future__ import annotations
 
-from config.settings import settings
+import asyncio
 
-# Uncomment when ready:
-# import ollama
-# from rag.embeddings    import generate_embedding
-# from rag.vector_store  import similarity_search
+from config.settings import settings
+from rag.embeddings import generate_embedding
+from rag.vector_store import similarity_search
+
+# import ollama   # uncomment for step 4
 
 
 # ---------------------------------------------------------------------------
@@ -104,23 +105,21 @@ async def retrieve_and_answer(
     -------
     (answer_text, source_chunks)
 
-    TODO:
-        # Step 1 — embed the query
-        query_embedding = generate_embedding(query)
+    """
+    # Step 1 — embed the query (sync call; run in thread pool to avoid blocking)
+    print ("Query:::", query)
+    query_embedding = await asyncio.to_thread(generate_embedding, query)
 
-        # Step 2 — retrieve similar chunks
-        chunks = similarity_search(query_embedding, top_k=settings.top_k_results)
-
-        # Step 3 — build prompt
-        messages = build_prompt(query, chunks, history)
-
-        # Step 4 — call Ollama
-        import ollama
-        response = ollama.chat(model=model, messages=messages)
-        answer   = response["message"]["content"]
-
-        # Step 5 — format chunks for the frontend source panel
-        sources = [
+    # Step 2 — retrieve the top-k most similar chunks from Postgres
+    chunks = await asyncio.to_thread(similarity_search, query_embedding, settings.top_k_results)
+    print ("chunks:::", chunks)
+    
+    # TODO step 3: messages = build_prompt(query, chunks, history)
+    # TODO step 4: response = await asyncio.to_thread(ollama.chat, model=model, messages=messages)
+    #              answer   = response["message"]["content"]
+    # TODO step 5: format sources and return answer, sources
+    """
+      sources = [
             {
                 "document": chunk["source"],
                 "text":     chunk["text"],
@@ -131,13 +130,5 @@ async def retrieve_and_answer(
         ]
 
         return answer, sources
-
-    Async note: ollama.chat() is synchronous. Run it in a thread pool:
-        import asyncio
-        loop     = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: ollama.chat(model=model, messages=messages)
-        )
     """
-    raise NotImplementedError("Implement retrieve_and_answer()")
+    raise NotImplementedError("Steps 3–5 (prompt, Ollama call, format) not yet implemented")

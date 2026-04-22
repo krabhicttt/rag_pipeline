@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from config.settings import settings
 
 # Uncomment this import once you implement retriever:
-# from rag.retriever import retrieve_and_answer
+from rag.retriever import retrieve_and_answer
 from rag.document_processor import ingest_documents
 
 router = APIRouter()
@@ -100,11 +100,11 @@ async def chat(req: ChatRequest):
     """
 
     # TODO: Replace this stub with your real implementation
-    # answer, sources = await retrieve_and_answer(
-    #     query=req.message,
-    #     model=req.model,
-    #     history=req.history,
-    # )
+    answer, sources = await retrieve_and_answer(
+        query=req.message,
+        model=req.model,
+        history=req.history,
+     )
 
     # --- STUB RESPONSE (remove once retriever is implemented) ---
     raise HTTPException(
