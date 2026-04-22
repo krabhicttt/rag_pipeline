@@ -17,7 +17,6 @@ from pydantic import BaseModel
 
 from config.settings import settings
 
-# Uncomment this import once you implement retriever:
 from rag.retriever import retrieve_and_answer
 from rag.document_processor import ingest_documents
 
@@ -79,40 +78,24 @@ async def health():
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
+    """RAG chat endpoint — embeds the query, retrieves chunks, calls Ollama."""
     print(f"Received chat request: {req.message} (model={req.model}, history_len={len(req.history)})")
-    """
-    Main chat endpoint — the heart of the RAG pipeline.
 
-    Flow you need to implement inside rag/retriever.py:
-    1. Generate an embedding for req.message  (rag/embeddings.py)
-    2. Search the vector store for top-k similar chunks  (rag/vector_store.py)
-    3. Build a prompt: system instructions + retrieved chunks + conversation history
-    4. Call Ollama with the prompt  (ollama.chat())
-    5. Return the answer + source chunks
-
-    Example Ollama call (add to retriever.py):
-        import ollama
-        response = ollama.chat(
+    try:
+        answer, sources = await retrieve_and_answer(
+            query=req.message,
             model=req.model,
-            messages=messages_list,   # list of {role, content} dicts
+            history=req.history,
         )
-        answer = response["message"]["content"]
-    """
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
-    # TODO: Replace this stub with your real implementation
-    answer, sources = await retrieve_and_answer(
-        query=req.message,
+    print(f"Generated answer: {answer}... with {sources} sources")
+
+    return ChatResponse(
+        response=answer,
+        sources=[SourceChunk(**s) for s in sources],
         model=req.model,
-        history=req.history,
-     )
-
-    # --- STUB RESPONSE (remove once retriever is implemented) ---
-    raise HTTPException(
-        status_code=501,
-        detail=(
-            "Chat endpoint not implemented yet. "
-            "Open backend/api/routes.py and backend/rag/retriever.py to implement."
-        ),
     )
 
 
